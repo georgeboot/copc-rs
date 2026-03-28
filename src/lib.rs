@@ -15,6 +15,6 @@ mod writer;
 pub use copc::{CopcInfo, Entry, HierarchyPage, VoxelKey};
 pub use error::*;
 pub use hierarchy::Hierarchy;
-pub use las::{Bounds, Vector};
+pub use las::{Bounds, Vector, Vlr};
 pub use reader::*;
 pub use writer::*;
