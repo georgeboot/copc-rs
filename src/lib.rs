@@ -5,13 +5,16 @@ const MAX_NODE_SIZE_DEFAULT: i32 = 16384;
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 mod compressor;
-mod copc;
+pub mod copc;
 mod decompressor;
 mod error;
+mod hierarchy;
 mod reader;
 mod writer;
 
+pub use copc::{CopcInfo, Entry, HierarchyPage, VoxelKey};
 pub use error::*;
+pub use hierarchy::Hierarchy;
 pub use las::{Bounds, Vector};
 pub use reader::*;
 pub use writer::*;

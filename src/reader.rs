@@ -1,7 +1,8 @@
 //! COPC file reader.
 
-use crate::copc::{CopcInfo, Entry, HierarchyPage, OctreeNode, VoxelKey};
+use crate::copc::{CopcInfo, HierarchyPage, OctreeNode};
 use crate::decompressor::CopcDecompressor;
+use crate::hierarchy::Hierarchy;
 use las::raw;
 use las::{Bounds, Builder, Header, Transform, Vector, Vlr};
 use laz::LazVlr;
@@ -20,8 +21,10 @@ pub struct CopcReader<R> {
     header: Header,
     copc_info: CopcInfo,
     laz_vlr: LazVlr,
-    /// Entries of loaded hierarchy pages
-    hierarchy_entries: HashMap<VoxelKey, Entry>,
+    /// Loaded hierarchy
+    hierarchy: Hierarchy,
+    /// All EVLRs from the file, including unrecognized ones.
+    evlrs: Vec<Vlr>,
 }
 
 impl CopcReader<BufReader<File>> {
@@ -80,6 +83,9 @@ impl<R: Read + Seek> CopcReader<R> {
                     .push(raw::Vlr::read_from(&mut read, true).map(Vlr::new)?);
             }
         }
+
+        // store all EVLRs before building the header consumes them
+        let evlrs = builder.evlrs.iter().map(|v| v.clone()).collect::<Vec<_>>();
 
         // build the header
         let header = builder.into_header()?;
@@ -141,7 +147,8 @@ impl<R: Read + Seek> CopcReader<R> {
             header,
             copc_info,
             laz_vlr: laszip_vlr.ok_or(crate::Error::LasZipVlrNotFound)?,
-            hierarchy_entries,
+            hierarchy: Hierarchy::new(hierarchy_entries),
+            evlrs,
         })
     }
 
@@ -156,7 +163,18 @@ impl<R: Read + Seek> CopcReader<R> {
     }
 
     pub fn num_entries(&self) -> usize {
-        self.hierarchy_entries.len()
+        self.hierarchy.len()
+    }
+
+    /// Returns all EVLRs found in the file.
+    /// Extension crates can search these for their own record types.
+    pub fn evlrs(&self) -> &[Vlr] {
+        &self.evlrs
+    }
+
+    /// Returns the loaded hierarchy.
+    pub fn hierarchy(&self) -> &Hierarchy {
+        &self.hierarchy
     }
 
     /// Loads the nodes of the COPC octree that
@@ -208,7 +226,7 @@ impl<R: Read + Seek> CopcReader<R> {
                 continue;
             }
 
-            let entry = match self.hierarchy_entries.get(&current_node.entry.key) {
+            let entry = match self.hierarchy.get(&current_node.entry.key) {
                 None => continue, // no entries for this node
                 Some(e) => e,
             };

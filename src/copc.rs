@@ -29,7 +29,7 @@ pub struct CopcInfo {
 
 impl CopcInfo {
     /// Reads COPC VLR data from a `Read`.
-    pub(crate) fn read_from<R: Read>(mut read: R) -> crate::Result<Self> {
+    pub fn read_from<R: Read>(mut read: R) -> crate::Result<Self> {
         Ok(CopcInfo {
             center: Vector {
                 x: read.read_f64::<LittleEndian>()?,
@@ -97,7 +97,7 @@ impl Default for VoxelKey {
 
 impl VoxelKey {
     /// Reads VoxelKey from a `Read`.
-    pub(crate) fn read_from<R: Read>(read: &mut R) -> crate::Result<Self> {
+    pub fn read_from<R: Read>(read: &mut R) -> crate::Result<Self> {
         Ok(VoxelKey {
             level: read.read_i32::<LittleEndian>()?,
             x: read.read_i32::<LittleEndian>()?,
@@ -116,7 +116,7 @@ impl VoxelKey {
         Ok(())
     }
 
-    pub(crate) fn child(&self, dir: i32) -> VoxelKey {
+    pub fn child(&self, dir: i32) -> VoxelKey {
         VoxelKey {
             level: self.level + 1,
             x: (self.x << 1) | (dir & 0x1),
@@ -124,10 +124,10 @@ impl VoxelKey {
             z: (self.z << 1) | ((dir >> 2) & 0x1),
         }
     }
-    pub(crate) fn children(&self) -> Vec<VoxelKey> {
+    pub fn children(&self) -> Vec<VoxelKey> {
         (0..8).map(|i| self.child(i)).collect()
     }
-    pub(crate) fn bounds(&self, root_bounds: &Bounds) -> Bounds {
+    pub fn bounds(&self, root_bounds: &Bounds) -> Bounds {
         // In an octree every cell is a cube
         let side_size =
             (root_bounds.max.x - root_bounds.min.x) / 2_u32.pow(self.level as u32) as f64;
@@ -173,7 +173,7 @@ pub struct Entry {
 
 impl Entry {
     /// Reads hierarchy entry from a `Read`.
-    pub(crate) fn read_from<R: Read>(read: &mut R) -> crate::Result<Self> {
+    pub fn read_from<R: Read>(read: &mut R) -> crate::Result<Self> {
         Ok(Entry {
             key: VoxelKey::read_from(read)?,
             offset: read.read_u64::<LittleEndian>()?,
@@ -205,7 +205,7 @@ pub struct HierarchyPage {
 
 impl HierarchyPage {
     /// Reads hierarchy page from a `Read`.
-    pub(crate) fn read_from<R: Read>(mut read: R, page_size: u64) -> crate::Result<Self> {
+    pub fn read_from<R: Read>(mut read: R, page_size: u64) -> crate::Result<Self> {
         let num_entries = page_size as usize / 32;
         let mut entries = Vec::with_capacity(num_entries);
         for _ in 0..num_entries {
